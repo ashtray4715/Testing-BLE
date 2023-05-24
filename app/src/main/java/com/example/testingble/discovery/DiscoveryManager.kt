@@ -51,7 +51,12 @@ class DiscoveryManager(private val context: Context) {
         val scanCallBack = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 Log.i(TAG, "onScanResult: address ? ${result.device.address}")
-                trySend(DiscoveredDeviceImpl(result.device))
+                try {
+                    trySend(DiscoveredDeviceImpl(result.device))
+                } catch (e: Exception) {
+                    Log.e(TAG, "onScanResult: trySend failed with exception ${e.message}")
+                    e.printStackTrace()
+                }
             }
 
             override fun onScanFailed(errorCode: Int) {
