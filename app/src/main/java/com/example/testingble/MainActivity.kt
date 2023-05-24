@@ -46,6 +46,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        BleApp.getSdk().deviceManagerApi.getPairedDeviceList().apply {
+            Log.i(TAG, "onStart: paired device list size $size")
+        }.forEach {
+            Log.i(TAG, "onStart: paired device id $it")
+        }
+    }
+
     companion object {
         private const val TAG = "MainActivity"
     }
