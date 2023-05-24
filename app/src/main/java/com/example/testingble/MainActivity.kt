@@ -26,13 +26,19 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 try {
+                    val deviceList = mutableSetOf<String>()
                     discoveryManager.startScan().onStart {
+                        deviceList.clear()
                         textView.append("flow started successfully\n")
                     }.onCompletion {
+                        deviceList.clear()
                         textView.append("flow completed successfully\n")
                     }.collect {
-                        Log.i(TAG, "found a device ${it.address}")
-                        textView.append("found a device ${it.address}\n")
+                        if (deviceList.contains(it.address).not()) {
+                            deviceList.add(it.address)
+                            Log.i(TAG, "found a device ${it.address}")
+                            textView.append("found a device ${it.address}\n")
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "exception found in start scan flow [${e.message}]")

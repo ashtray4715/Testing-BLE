@@ -1,5 +1,6 @@
 package com.example.testingble.discovery
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothAdapter.EXTRA_STATE
@@ -11,7 +12,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -23,8 +27,15 @@ class DiscoveryManager(private val context: Context) {
     fun startScan(): Flow<DiscoveredDevice> = callbackFlow {
         Log.i(TAG, "startScan: flow started")
 
+        getMissingPermissions().let { permissions ->
+            if (permissions.isNotEmpty()) {
+                close(Exception("Missing permissions ${permissions.joinToString(", ")}"))
+                return@callbackFlow
+            }
+        }
+
         val bluetoothService = context.getSystemService(Context.BLUETOOTH_SERVICE)
-        val bleAdapter = (bluetoothService as BluetoothManager).adapter
+        val bleAdapter = (bluetoothService as BluetoothManager?)?.adapter
 
         if (bleAdapter == null) {
             Log.e(TAG, "startScan: Bluetooth adapter is null")
@@ -36,6 +47,21 @@ class DiscoveryManager(private val context: Context) {
             close(Exception("Bluetooth adapter is not enabled"))
             return@callbackFlow
         }
+
+        val scanCallBack = object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                Log.i(TAG, "onScanResult: address ? ${result.device.address}")
+                trySend(DiscoveredDeviceImpl(result.device))
+            }
+
+            override fun onScanFailed(errorCode: Int) {
+                Log.i(TAG, "onScanFailed: errorCode ? $errorCode")
+                close(Exception("Scan failed with errorCode ? $errorCode"))
+            }
+        }
+
+        Log.i(TAG, "startScan: invoked successfully")
+        bleAdapter.bluetoothLeScanner.startScan(scanCallBack)
 
         val bleStatusReceiver = object : BroadcastReceiver() {
             override fun onReceive(p0: Context?, intent: Intent?) {
@@ -53,25 +79,10 @@ class DiscoveryManager(private val context: Context) {
             }
         }
 
-        Log.i(TAG, "registerReceiver: invoked successfully")
+        Log.i(TAG, "registerReceiver: invoking")
         context.registerReceiver(bleStatusReceiver, IntentFilter().apply {
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
         })
-
-        val scanCallBack = object : ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: ScanResult) {
-                Log.i(TAG, "onScanResult: address ? ${result.device.address}")
-                trySend(DiscoveredDeviceImpl(result.device))
-            }
-
-            override fun onScanFailed(errorCode: Int) {
-                Log.i(TAG, "onScanFailed: errorCode ? $errorCode")
-                close(Exception("Scan failed with errorCode ? $errorCode"))
-            }
-        }
-
-        Log.i(TAG, "startScan: invoked successfully")
-        bleAdapter.bluetoothLeScanner.startScan(scanCallBack)
 
         awaitClose {
             Log.i(TAG, "stopScan: invoked successfully")
@@ -80,6 +91,24 @@ class DiscoveryManager(private val context: Context) {
             context.unregisterReceiver(bleStatusReceiver)
         }
     }.flowOn(Dispatchers.Main)
+
+    private fun getMissingPermissions(): List<String> {
+        val permissionList = mutableListOf<String>().apply {
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                    add(Manifest.permission.BLUETOOTH_SCAN)
+                    add(Manifest.permission.BLUETOOTH_CONNECT)
+                }
+                else -> {
+                    // todo - add permissions for below Android-S
+                }
+            }
+        }
+        return permissionList.mapNotNull {
+            val pStatus = ContextCompat.checkSelfPermission(context, it)
+            if (pStatus == PackageManager.PERMISSION_GRANTED) null else it
+        }
+    }
 
     companion object {
         private const val TAG = "DiscoveryManager"
