@@ -1,4 +1,4 @@
-package com.example.testingble.discovery
+package com.example.testingble.cm.api
 
 interface DiscoveredDevice {
     val name: String

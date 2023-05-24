@@ -1,4 +1,4 @@
-package com.example.testingble.discovery
+package com.example.testingble.cm.sdk
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -16,15 +16,17 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.example.testingble.cm.api.DiscoveredDevice
+import com.example.testingble.cm.api.DiscoveryManagerApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
 
-class DiscoveryManager(private val context: Context) {
+internal class DiscoveryManager(private val context: Context) : DiscoveryManagerApi {
     @SuppressLint("MissingPermission")
-    fun startScan(): Flow<DiscoveredDevice> = callbackFlow {
+    override fun startScan(): Flow<DiscoveredDevice> = callbackFlow {
         Log.i(TAG, "startScan: flow started")
 
         getMissingPermissions().let { permissions ->

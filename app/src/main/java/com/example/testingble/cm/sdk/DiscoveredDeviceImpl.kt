@@ -1,9 +1,10 @@
-package com.example.testingble.discovery
+package com.example.testingble.cm.sdk
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
+import com.example.testingble.cm.api.DiscoveredDevice
 
-class DiscoveredDeviceImpl(private val bluetoothDevice: BluetoothDevice) : DiscoveredDevice {
+internal class DiscoveredDeviceImpl(private val bluetoothDevice: BluetoothDevice) : DiscoveredDevice {
     override val name: String
         @SuppressLint("MissingPermission")
         get() = bluetoothDevice.name ?: ""

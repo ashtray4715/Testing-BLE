@@ -7,27 +7,24 @@ import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.testingble.discovery.DiscoveryManager
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var discoveryManager: DiscoveryManager
     private lateinit var textView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         textView = findViewById(R.id.text_view)
-        discoveryManager = DiscoveryManager(applicationContext)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 try {
                     val deviceList = mutableSetOf<String>()
-                    discoveryManager.startScan().onStart {
+                    BleApp.getSdk().discoveryManagerApi.startScan().onStart {
                         deviceList.clear()
                         textView.append("flow started successfully\n")
                     }.onCompletion {
