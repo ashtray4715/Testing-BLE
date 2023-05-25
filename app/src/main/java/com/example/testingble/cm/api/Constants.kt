@@ -1,0 +1,38 @@
+package com.example.testingble.cm.api
+
+enum class DoConnectResult {
+    RESULT_OK,
+    ERROR_ALREADY_CONNECTED,
+    ERROR_ALREADY_CONNECTING,
+    ERROR_GETTING_DISCONNECTED,
+    ERROR_NOT_PAIRED_DEVICE,
+    ERROR_MISSING_PERMISSION
+}
+
+enum class DoDisconnectResult {
+    RESULT_OK,
+    ERROR_ALREADY_DISCONNECTED,
+    ERROR_ALREADY_DISCONNECTING,
+    ERROR_GETTING_CONNECTED,
+    ERROR_NOT_PAIRED_DEVICE,
+    ERROR_MISSING_PERMISSION,
+    ERROR_MISSING_GATT_OBJECT
+}
+
+enum class SendDataResult {
+    RESULT_OK,
+    ERROR_NOT_PAIRED_DEVICE,
+    ERROR_NOT_CONNECTED_DEVICE,
+}
+
+enum class ConnectionState {
+    CONNECTING,
+    CONNECTED,
+    DISCONNECTING,
+    DISCONNECTED
+}
+
+enum class PairingState {
+    NOT_PAIRED,
+    PAIRED
+}

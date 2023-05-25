@@ -1,6 +1,5 @@
 package com.example.testingble.cm.sdk
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothAdapter.EXTRA_STATE
@@ -12,12 +11,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
-import androidx.core.content.ContextCompat
-import com.example.testingble.cm.api.DiscoveredDevice
-import com.example.testingble.cm.api.DiscoveryManagerApi
+import com.example.testingble.cm.api.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -27,47 +22,45 @@ import kotlinx.coroutines.flow.flowOn
 internal class DiscoveryManager(private val context: Context) : DiscoveryManagerApi {
     @SuppressLint("MissingPermission")
     override fun startScan(): Flow<DiscoveredDevice> = callbackFlow {
-        Log.i(TAG, "startScan: flow started")
+        SdkLog.i("$TAG startScan: flow started")
 
-        getMissingPermissions().let { permissions ->
-            if (permissions.isNotEmpty()) {
-                close(Exception("Missing permissions ${permissions.joinToString(", ")}"))
-                return@callbackFlow
-            }
+        if (hasMissingPermissions()) {
+            close(MissingPermissionsException())
+            return@callbackFlow
         }
 
         val bluetoothService = context.getSystemService(Context.BLUETOOTH_SERVICE)
         val bleAdapter = (bluetoothService as BluetoothManager?)?.adapter
 
         if (bleAdapter == null) {
-            Log.e(TAG, "startScan: Bluetooth adapter is null")
-            close(Exception("Bluetooth adapter is null"))
+            SdkLog.e("$TAG startScan: Bluetooth adapter is null")
+            close(NullBluetoothAdapterException())
             return@callbackFlow
         }
         if (bleAdapter.isEnabled.not()) {
-            Log.e(TAG, "startScan: Bluetooth adapter is not enabled")
-            close(Exception("Bluetooth adapter is not enabled"))
+            SdkLog.e("$TAG startScan: Bluetooth adapter is not enabled")
+            close(DisabledBluetoothAdapterException())
             return@callbackFlow
         }
 
         val scanCallBack = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                Log.i(TAG, "onScanResult: address ? ${result.device.address}")
+                SdkLog.i("$TAG onScanResult: address ? ${result.device.address}")
                 try {
                     trySend(DiscoveredDeviceImpl(result.device))
                 } catch (e: Exception) {
-                    Log.e(TAG, "onScanResult: trySend failed with exception ${e.message}")
+                    SdkLog.e("$TAG onScanResult: trySend failed with exception ${e.message}")
                     e.printStackTrace()
                 }
             }
 
             override fun onScanFailed(errorCode: Int) {
-                Log.i(TAG, "onScanFailed: errorCode ? $errorCode")
-                close(Exception("Scan failed with errorCode ? $errorCode"))
+                SdkLog.i("$TAG onScanFailed: errorCode ? $errorCode")
+                close(ScanFailedException(errorCode = errorCode))
             }
         }
 
-        Log.i(TAG, "startScan: invoked successfully")
+        SdkLog.i("$TAG startScan: invoked successfully")
         bleAdapter.bluetoothLeScanner.startScan(scanCallBack)
 
         val bleStatusReceiver = object : BroadcastReceiver() {
@@ -75,46 +68,42 @@ internal class DiscoveryManager(private val context: Context) : DiscoveryManager
                 if (intent?.action == BluetoothAdapter.ACTION_STATE_CHANGED) {
                     when (intent.getIntExtra(EXTRA_STATE, ERROR)) {
                         BluetoothAdapter.STATE_OFF -> {
-                            Log.e(TAG, "onReceive: Bluetooth status changed [OFF]")
-                            close(Exception("Bluetooth adapter gets disabled"))
+                            SdkLog.e("$TAG onReceive: Bluetooth status changed [OFF]")
+                            close(DisabledBluetoothAdapterException())
                         }
                         BluetoothAdapter.STATE_ON -> {
-                            Log.e(TAG, "onReceive: Bluetooth status changed [ON]")
+                            SdkLog.e("$TAG onReceive: Bluetooth status changed [ON]")
                         }
                     }
                 }
             }
         }
 
-        Log.i(TAG, "registerReceiver: invoking")
+        SdkLog.i("$TAG registerReceiver: invoking")
         context.registerReceiver(bleStatusReceiver, IntentFilter().apply {
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
         })
 
         awaitClose {
-            Log.i(TAG, "stopScan: invoked successfully")
+            SdkLog.i("$TAG stopScan: invoked successfully")
             bleAdapter.bluetoothLeScanner.stopScan(scanCallBack)
-            Log.i(TAG, "unregisterReceiver: invoked successfully")
+            SdkLog.i("$TAG unregisterReceiver: invoked successfully")
             context.unregisterReceiver(bleStatusReceiver)
         }
-    }.flowOn(Dispatchers.Main)
+    }.flowOn(Dispatchers.IO)
 
-    private fun getMissingPermissions(): List<String> {
-        val permissionList = mutableListOf<String>().apply {
+    private fun hasMissingPermissions(): Boolean {
+        return mutableListOf<Boolean>().apply {
             when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                    add(Manifest.permission.BLUETOOTH_SCAN)
-                    add(Manifest.permission.BLUETOOTH_CONNECT)
+                    add(PermissionManager.hasBluetoothScanPermission(context))
+                    add(PermissionManager.hasBluetoothConnectPermission(context))
                 }
                 else -> {
                     // todo - add permissions for below Android-S
                 }
             }
-        }
-        return permissionList.mapNotNull {
-            val pStatus = ContextCompat.checkSelfPermission(context, it)
-            if (pStatus == PackageManager.PERMISSION_GRANTED) null else it
-        }
+        }.contains(false)
     }
 
     companion object {

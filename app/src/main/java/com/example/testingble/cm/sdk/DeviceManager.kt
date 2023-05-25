@@ -12,7 +12,7 @@ internal class DeviceManager(private val context: Context) : DeviceManagerApi {
         val bluetoothService = context.getSystemService(Context.BLUETOOTH_SERVICE)
         val bleAdapter = (bluetoothService as BluetoothManager).adapter
         val mBluetoothDevice = bleAdapter.getRemoteDevice(address)
-        return BleDeviceImpl(mBluetoothDevice)
+        return BleDeviceImpl(context, mBluetoothDevice)
     }
 
     @SuppressLint("MissingPermission")

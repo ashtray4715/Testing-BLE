@@ -5,6 +5,10 @@ import kotlinx.coroutines.flow.StateFlow
 interface BleDevice {
     val address: String
     val deviceName: String
-    val pairingState: StateFlow<Int>
-    val connectionState: StateFlow<Int>
+    val pairingState: StateFlow<PairingState>
+    val connectionState: StateFlow<ConnectionState>
+
+    fun connect(): DoConnectResult
+    fun disconnect(): DoDisconnectResult
+    fun sendData(): SendDataResult
 }

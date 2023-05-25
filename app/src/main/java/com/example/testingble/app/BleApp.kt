@@ -1,4 +1,4 @@
-package com.example.testingble
+package com.example.testingble.app
 
 import android.app.Application
 import com.example.testingble.cm.sdk.BluetoothSdk
@@ -7,11 +7,11 @@ class BleApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        sdk = BluetoothSdk(this)
+        sdk.initSdk(this)
     }
 
     companion object {
-        private lateinit var sdk: BluetoothSdk
+        private val sdk = BluetoothSdk()
         fun getSdk(): BluetoothSdk = sdk
     }
 }
