@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import com.example.testingble.cm.api.BleDevice
 import com.example.testingble.cm.api.DeviceManagerApi
+import com.example.testingble.cm.sdk.permission.PermissionManager
 
 internal class DeviceManager(private val context: Context) : DeviceManagerApi {
 
@@ -12,7 +13,7 @@ internal class DeviceManager(private val context: Context) : DeviceManagerApi {
         val bluetoothService = context.getSystemService(Context.BLUETOOTH_SERVICE)
         val bleAdapter = (bluetoothService as BluetoothManager).adapter
         val mBluetoothDevice = bleAdapter.getRemoteDevice(address)
-        return BleDeviceImpl(context, mBluetoothDevice)
+        return BleDeviceImpl(context, mBluetoothDevice, PermissionManager())
     }
 
     @SuppressLint("MissingPermission")

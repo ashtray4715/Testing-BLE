@@ -6,6 +6,8 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.content.Context
 import com.example.testingble.cm.api.*
+import com.example.testingble.cm.sdk.permission.PermissionManager
+import com.example.testingble.cm.sdk.permission.PermissionManagerApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 internal class BleDeviceImpl(
     val mContext: Context,
-    val mBluetoothDevice: BluetoothDevice
+    val mBluetoothDevice: BluetoothDevice,
+    val permissionManager: PermissionManagerApi
 ) : BleDevice {
 
     val mCoroutineScope = CoroutineScope(Dispatchers.IO)

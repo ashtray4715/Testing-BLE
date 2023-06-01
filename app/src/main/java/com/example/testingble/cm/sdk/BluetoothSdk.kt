@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.testingble.cm.api.DeviceManagerApi
 import com.example.testingble.cm.api.DiscoveryManagerApi
 import com.example.testingble.cm.api.ModuleNotInitializedException
+import com.example.testingble.cm.sdk.permission.PermissionManager
 
 class BluetoothSdk {
 
@@ -11,7 +12,7 @@ class BluetoothSdk {
     private var deviceManagerApi: DeviceManagerApi? = null
 
     fun initSdk(context: Context) {
-        discoveryManagerApi = DiscoveryManager(context)
+        discoveryManagerApi = DiscoveryManager(context, PermissionManager())
         deviceManagerApi = DeviceManager(context)
     }
 

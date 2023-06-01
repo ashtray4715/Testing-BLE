@@ -8,33 +8,34 @@ import com.example.testingble.cm.api.DoDisconnectResult
 import com.example.testingble.cm.api.PairingState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @SuppressLint("MissingPermission")
 internal fun BleDeviceImpl.doConnect(): DoConnectResult {
-    SdkLog.i("$mTag doConnect: invoked currentState: ${connectionState.value}")
-    if (PermissionManager.hasBluetoothConnectPermission(mContext).not()) {
-        SdkLog.e("$mTag doConnect: invoked but has missing permissions")
+    Timber.i("$mTag doConnect: invoked currentState: ${connectionState.value}")
+    if (permissionManager.hasBluetoothConnectPermission(mContext).not()) {
+        Timber.e("$mTag doConnect: invoked but has missing permissions")
         return DoConnectResult.ERROR_MISSING_PERMISSION
     }
     if (pairingState.value != PairingState.NOT_PAIRED) {
-        SdkLog.e("$mTag doConnect: invoked but device is not paired")
+        Timber.e("$mTag doConnect: invoked but device is not paired")
         return DoConnectResult.ERROR_NOT_PAIRED_DEVICE
     }
     return when (connectionState.value) {
         ConnectionState.CONNECTED -> {
-            SdkLog.e("$mTag doConnect: invoked but device is already connected")
+            Timber.e("$mTag doConnect: invoked but device is already connected")
             DoConnectResult.ERROR_ALREADY_CONNECTED
         }
         ConnectionState.CONNECTING -> {
-            SdkLog.e("$mTag doConnect: invoked but device is already connecting")
+            Timber.e("$mTag doConnect: invoked but device is already connecting")
             DoConnectResult.ERROR_ALREADY_CONNECTING
         }
         ConnectionState.DISCONNECTING -> {
-            SdkLog.e("$mTag doConnect: invoked but device is getting disconnected")
+            Timber.e("$mTag doConnect: invoked but device is getting disconnected")
             DoConnectResult.ERROR_GETTING_DISCONNECTED
         }
         ConnectionState.DISCONNECTED -> {
-            SdkLog.i("$mTag doConnect: calling bluetooth connect api")
+            Timber.i("$mTag doConnect: calling bluetooth connect api")
             mCoroutineScope.launch(Dispatchers.IO) {
                 mBluetoothGatt = BluetoothApiManager.connect(this@doConnect)
             }
@@ -44,40 +45,40 @@ internal fun BleDeviceImpl.doConnect(): DoConnectResult {
 }
 
 internal fun BleDeviceImpl.doDisconnect(): DoDisconnectResult {
-    SdkLog.i("$mTag doDisconnect: invoked currentState: ${connectionState.value}")
+    Timber.i("$mTag doDisconnect: invoked currentState: ${connectionState.value}")
     if (pairingState.value != PairingState.NOT_PAIRED) {
-        SdkLog.e("$mTag doDisconnect: invoked but device is not paired")
+        Timber.e("$mTag doDisconnect: invoked but device is not paired")
         return DoDisconnectResult.ERROR_NOT_PAIRED_DEVICE
     }
     return when (connectionState.value) {
         ConnectionState.CONNECTED -> {
             val mGattObject = mBluetoothGatt ?: let {
-                SdkLog.e("$mTag doDisconnect: invoked but no gatt object")
+                Timber.e("$mTag doDisconnect: invoked but no gatt object")
                 return DoDisconnectResult.ERROR_MISSING_GATT_OBJECT
             }
-            SdkLog.i("$mTag doDisconnect: calling bluetooth disconnect api")
+            Timber.i("$mTag doDisconnect: calling bluetooth disconnect api")
             mCoroutineScope.launch {
                 BluetoothApiManager.disconnect(mGattObject)
             }
             DoDisconnectResult.RESULT_OK
         }
         ConnectionState.CONNECTING -> {
-            SdkLog.e("$mTag doDisconnect: invoked but device is connecting")
+            Timber.e("$mTag doDisconnect: invoked but device is connecting")
             DoDisconnectResult.ERROR_GETTING_CONNECTED
         }
         ConnectionState.DISCONNECTING -> {
-            SdkLog.e("$mTag doDisconnect: invoked but device is already disconnecting")
+            Timber.e("$mTag doDisconnect: invoked but device is already disconnecting")
             DoDisconnectResult.ERROR_ALREADY_DISCONNECTING
         }
         ConnectionState.DISCONNECTED -> {
-            SdkLog.e("$mTag doDisconnect: invoked but device is already disconnected")
+            Timber.e("$mTag doDisconnect: invoked but device is already disconnected")
             DoDisconnectResult.ERROR_ALREADY_DISCONNECTED
         }
     }
 }
 
 internal fun BleDeviceImpl.doOnConnectionStateChanged(newState: Int) {
-    SdkLog.i("$mTag doOnConnectionStateChanged: invoked currentState: ${connectionState.value}")
+    Timber.i("$mTag doOnConnectionStateChanged: invoked currentState: ${connectionState.value}")
     when (newState) {
         BluetoothProfile.STATE_CONNECTED -> ConnectionState.CONNECTED
         BluetoothProfile.STATE_CONNECTING -> ConnectionState.CONNECTING
@@ -85,9 +86,9 @@ internal fun BleDeviceImpl.doOnConnectionStateChanged(newState: Int) {
         BluetoothProfile.STATE_DISCONNECTING -> ConnectionState.DISCONNECTING
         else -> null
     }?.let {
-        SdkLog.i("$mTag doOnConnectionStateChanged: newState ? $it")
+        Timber.i("$mTag doOnConnectionStateChanged: newState ? $it")
         mCoroutineScope.launch(Dispatchers.IO) { mConnectionState.emit(it) }
     } ?: let {
-        SdkLog.e("$mTag doOnConnectionStateChanged: newState is unknown [$newState]")
+        Timber.e("$mTag doOnConnectionStateChanged: newState is unknown [$newState]")
     }
 }
