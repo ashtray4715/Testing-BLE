@@ -25,6 +25,9 @@ internal class DiscoveryManager(
     private val context: Context,
     private val permissionManager: PermissionManagerApi
 ) : DiscoveryManagerApi {
+
+    private val intentFilterFactory = IntentFilterFactory()
+
     @SuppressLint("MissingPermission")
     override fun startScan(): Flow<DiscoveredDevice> = callbackFlow {
         Timber.i("$TAG startScan: flow started")
@@ -84,10 +87,12 @@ internal class DiscoveryManager(
             }
         }
 
+        val intentFilter = intentFilterFactory.getNewIntentFilter(
+            action = BluetoothAdapter.ACTION_STATE_CHANGED
+        )
+
         Timber.i("$TAG registerReceiver: invoking")
-        context.registerReceiver(bleStatusReceiver, IntentFilter().apply {
-            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
-        })
+        context.registerReceiver(bleStatusReceiver, intentFilter)
 
         awaitClose {
             Timber.i("$TAG stopScan: invoked successfully")
