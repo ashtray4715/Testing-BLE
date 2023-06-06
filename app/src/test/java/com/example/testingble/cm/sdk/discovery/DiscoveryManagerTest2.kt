@@ -7,40 +7,18 @@ import com.example.testingble.cm.api.DisabledBluetoothAdapterException
 import com.example.testingble.cm.sdk.DiscoveryManager
 import com.example.testingble.cm.sdk.log.TimberTestTree
 import com.example.testingble.cm.sdk.permission.PermissionManagerApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.mockito.Mock
-import org.mockito.Mockito.`when`
-import org.mockito.MockitoAnnotations
-import org.mockito.junit.MockitoJUnitRunner
 import timber.log.Timber
 
-@ExperimentalCoroutinesApi
-@RunWith(MockitoJUnitRunner::class)
 class DiscoveryManagerTest2 {
-
-    @Mock
-    private lateinit var mockContext: Context
-
-    @Mock
-    private lateinit var mockBluetoothManager: BluetoothManager
-
-    @Mock
-    private lateinit var mockBluetoothAdapter: BluetoothAdapter
 
     @Before
     fun setup() {
         Timber.plant(TimberTestTree())
-        MockitoAnnotations.openMocks(this)
-
-        `when`(mockContext.getSystemService(Context.BLUETOOTH_SERVICE)).thenReturn(
-            mockBluetoothManager
-        )
-        `when`(mockBluetoothManager.adapter).thenReturn(mockBluetoothAdapter)
-        `when`(mockBluetoothAdapter.isEnabled).thenReturn(false)
     }
 
     /**
@@ -49,7 +27,16 @@ class DiscoveryManagerTest2 {
      */
     @Test(expected = DisabledBluetoothAdapterException::class)
     fun testFunc(): Unit = runBlocking {
-        val discoveryManager = DiscoveryManager(mockContext, PermissionManagerApi())
+
+        val mContext = mockk<Context>()
+        val mBluetoothManager = mockk<BluetoothManager>()
+        val mBluetoothAdapter = mockk<BluetoothAdapter>()
+
+        every { mContext.getSystemService(Context.BLUETOOTH_SERVICE) } returns mBluetoothManager
+        every { mBluetoothManager.adapter } returns mBluetoothAdapter
+        every { mBluetoothAdapter.isEnabled } returns false
+
+        val discoveryManager = DiscoveryManager(mContext, PermissionManagerApi())
         discoveryManager.startScan().collect { }
     }
 

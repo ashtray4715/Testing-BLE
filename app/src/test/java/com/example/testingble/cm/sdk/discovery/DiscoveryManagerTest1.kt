@@ -5,29 +5,18 @@ import com.example.testingble.cm.api.NullBluetoothAdapterException
 import com.example.testingble.cm.sdk.DiscoveryManager
 import com.example.testingble.cm.sdk.log.TimberTestTree
 import com.example.testingble.cm.sdk.permission.PermissionManagerApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.mockito.Mock
-import org.mockito.Mockito.`when`
-import org.mockito.MockitoAnnotations
-import org.mockito.junit.MockitoJUnitRunner
 import timber.log.Timber
 
-@ExperimentalCoroutinesApi
-@RunWith(MockitoJUnitRunner::class)
 class DiscoveryManagerTest1 {
-
-    @Mock
-    private lateinit var mockContext: Context
 
     @Before
     fun setup() {
         Timber.plant(TimberTestTree())
-        MockitoAnnotations.openMocks(this)
-        `when`(mockContext.getSystemService(Context.BLUETOOTH_SERVICE)).thenReturn(null)
     }
 
     /**
@@ -36,7 +25,10 @@ class DiscoveryManagerTest1 {
      */
     @Test(expected = NullBluetoothAdapterException::class)
     fun testFunc(): Unit = runBlocking {
-        val discoveryManager = DiscoveryManager(mockContext, PermissionManagerApi())
+        val mContext = mockk<Context>()
+        every { mContext.getSystemService(Context.BLUETOOTH_SERVICE) } returns null
+
+        val discoveryManager = DiscoveryManager(mContext, PermissionManagerApi())
         discoveryManager.startScan().collect {}
     }
 }
