@@ -51,26 +51,6 @@ internal class DiscoveryManager(
             return@callbackFlow
         }
 
-        val scanCallBack = object : ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: ScanResult) {
-                Timber.i("$TAG onScanResult: address ? ${result.device.address}")
-                try {
-                    trySend(DiscoveredDeviceImpl(result.device))
-                } catch (e: Exception) {
-                    Timber.e("$TAG onScanResult: trySend failed with exception ${e.message}")
-                    e.printStackTrace()
-                }
-            }
-
-            override fun onScanFailed(errorCode: Int) {
-                Timber.i("$TAG onScanFailed: errorCode ? $errorCode")
-                close(ScanFailedException(errorCode = errorCode))
-            }
-        }
-
-        Timber.i("$TAG startScan: invoked successfully")
-        bleAdapter.bluetoothLeScanner.startScan(scanCallBack)
-
         val bleStatusReceiver = object : BroadcastReceiver() {
             override fun onReceive(p0: Context?, intent: Intent?) {
                 if (intent?.action == BluetoothAdapter.ACTION_STATE_CHANGED) {
@@ -93,6 +73,26 @@ internal class DiscoveryManager(
 
         Timber.i("$TAG registerReceiver: invoking")
         context.registerReceiver(bleStatusReceiver, intentFilter)
+
+        val scanCallBack = object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                Timber.i("$TAG onScanResult: address ? ${result.device.address}")
+                try {
+                    trySend(DiscoveredDeviceImpl(result.device))
+                } catch (e: Exception) {
+                    Timber.e("$TAG onScanResult: trySend failed with exception ${e.message}")
+                    e.printStackTrace()
+                }
+            }
+
+            override fun onScanFailed(errorCode: Int) {
+                Timber.i("$TAG onScanFailed: errorCode ? $errorCode")
+                close(ScanFailedException(errorCode = errorCode))
+            }
+        }
+
+        Timber.i("$TAG startScan: invoked successfully")
+        bleAdapter.bluetoothLeScanner.startScan(scanCallBack)
 
         awaitClose {
             Timber.i("$TAG stopScan: invoked successfully")

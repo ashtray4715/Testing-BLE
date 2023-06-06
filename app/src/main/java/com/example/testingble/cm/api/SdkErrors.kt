@@ -8,4 +8,4 @@ class NullBluetoothAdapterException : Exception("Bluetooth adapter is null")
 
 class DisabledBluetoothAdapterException : Exception("Bluetooth adapter is not enabled")
 
-class ScanFailedException(errorCode: Int) : Exception("Scan failed with errorCode ? $errorCode")
+class ScanFailedException(val errorCode: Int) : Exception("Scan failed with errorCode ? $errorCode")

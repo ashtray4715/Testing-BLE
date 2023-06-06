@@ -7,6 +7,7 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.IntentFilter
+import com.example.testingble.cm.api.ScanFailedException
 import com.example.testingble.cm.sdk.DiscoveryManager
 import com.example.testingble.cm.sdk.IntentFilterFactory
 import com.example.testingble.cm.sdk.log.TimberTestTree
@@ -17,7 +18,7 @@ import org.junit.Before
 import org.junit.Test
 import timber.log.Timber
 
-class DiscoveryManagerTest3 {
+class DiscoveryManagerTest5 {
 
     @Before
     fun setup() {
@@ -25,8 +26,8 @@ class DiscoveryManagerTest3 {
     }
 
     /**
-     * Here we will test, startScan() emits 2 devices,
-     * we will collect these values and perform testing
+     * Here we will test, when startScan() will throw ScanError with errorCode = 13,
+     * but before throwing error it will emit one device
      */
     @Test
     fun testFunc(): Unit = runBlocking {
@@ -42,9 +43,6 @@ class DiscoveryManagerTest3 {
         val scanResult1 = mockk<ScanResult>().apply {
             every { device.address } returns "1234567890"
         }
-        val scanResult2 = mockk<ScanResult>().apply {
-            every { device.address } returns "9876543210"
-        }
 
         every { mContext.getSystemService(Context.BLUETOOTH_SERVICE) } returns mBluetoothManager
         every { mBluetoothManager.adapter } returns mBluetoothAdapter
@@ -53,10 +51,8 @@ class DiscoveryManagerTest3 {
         every { mIntentFilterFactory.getNewIntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED) } returns mIntentFilter
 
         every { mBluetoothLeScanner.startScan(capture(mScanCallback)) } answers {
-            launch {
-                mScanCallback.captured.onScanResult(1, scanResult1)
-                mScanCallback.captured.onScanResult(2, scanResult2)
-            }
+            mScanCallback.captured.onScanResult(1, scanResult1)
+            mScanCallback.captured.onScanFailed(13)
         }
         every { mBluetoothLeScanner.stopScan(capture(mScanCallback)) } returns Unit
         every { mContext.registerReceiver(any(), any()) } returns mockk()
@@ -72,7 +68,7 @@ class DiscoveryManagerTest3 {
         val flow = myClass.startScan()
 
         val mOutputList = mutableListOf<String>()
-        var mExceptionFound = false
+        var mErrorCode = -1
 
         val mJob = launch {
             try {
@@ -80,21 +76,19 @@ class DiscoveryManagerTest3 {
                     assert(listOfAddresses.contains(it.address))
                     mOutputList.add(it.address)
                 }
-            } catch (e: CancellationException) {
-                mExceptionFound = false
+            } catch (e: ScanFailedException) {
+                mErrorCode = e.errorCode
             } catch (e: Exception) {
                 e.printStackTrace()
-                mExceptionFound = true
+                mErrorCode = 0
             }
         }
-
-
 
         delay(200)
         mJob.cancel()
 
-        assert(!mExceptionFound)
-        assert(mOutputList.size == 2)
+        assert(mErrorCode == 13)
+        assert(mOutputList.size == 1)
 
         verify(exactly = 1) { mBluetoothLeScanner.startScan(any()) }
         verify(exactly = 1) { mBluetoothLeScanner.stopScan(any<ScanCallback>()) }
